@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>Insert title here</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js" integrity="sha512-1QvjE7BtotQjkq8PxLeF6P46gEpBRXuskzIVgjFpekzFVF4yjRgrQvTG1MTOJ3yQgvTteKAcO7DSZI92+u/yZw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.js" integrity="sha512-tL4PIUsPy+Rks1go4kQG8M8/ItpRMvKnbBjQm4d2DQnFwgcBYRRN00QdyQnWSCwNMsoY/MfJY8nHp2CzlNdtZA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+	var stompClient = null;
+	var privateStomClient = null;
+	var socket = new SockJS("/ws");
+	
+	stompClient = Stomp.over(socket);
+	
+	stompClient.connect({}, (frame)=>{
+		console.log("VedantFrame",frame);
+		stompClient.subscribe("/all/messages", function(results){
+			console.log("results :- ",results);
+			console.log("results Body:- ",results.body);
+			show(JSON.parse(results.body));
+		});
+	});
+	
+	socket = new SockJS("/ws");
+	privateStomClient = Stomp.over(socket);
+	
+	privateStomClient.connect({},(frame)=>{
+		console.log("VedantFrame private",frame);
+		privateStomClient.subscribe("/user/specific", function(results){
+			console.log("results :- ",results);
+			console.log("results Body:- ",results.body);
+			show(JSON.parse(results.body));
+		});
+	});
+	
+	
+	
+	
+	function sendMessage(){
+		var text = document.getElementById("text").value;
+		console.log("Text to send :- ",text)
+		privateStomClient.send("/app/application",{},
+		JSON.stringify({'text':text})
+		);
+	}
+	
+	function sendPrivateMessage(){
+		 var text = document.getElementById('privateText').value;
+                var to = document.getElementById('to').value;
+                stompClient.send("/app/private", {},
+                  JSON.stringify({'text':text, 'to':to}))
+	}
+	
+	
+	function show(mess){
+		console.log("In show ",mess)
+		let messDiv = document.getElementById("messages");
+		let p = document.createElement("p");
+		p.innerHTML ="Message :- "+mess.text;
+		messDiv.appendChild(p);
+	}
+</script>
+
+</head>
+<body>
+	<div>
+		<div>
+			<input type="text" id="text" placeholder="Text">
+			<button id="sendMessages" onclick="sendMessage();">Send</button>
+		</div>
+		
+		<div>
+			<label >private specific user</label>
+			 <input type="text" id="privateText" placeholder="Private Message"/>
+        <input type="text" id="to" placeholder="To"/>
+			<button id="sendMessages" onclick="sendPrivateMessage();">Send</button>
+		</div>
+		
+		<div id="messages"></div>
+	</div>
+</body>
+</html>
